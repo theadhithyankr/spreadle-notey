@@ -14,6 +14,7 @@ A minimal, offline-first, privacy-focused notes application for Android.
 ## Privacy
 
 **All data stays on your device.** This app:
+
 - Does not access the internet
 - Does not collect any data
 - Does not require any permissions
