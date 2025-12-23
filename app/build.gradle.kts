@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.devtools.ksp")
 }
 
@@ -45,6 +46,12 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    lint {
+        textReport = true
+        textOutput = file("lint-report.txt")
+        abortOnError = false
+    }
 }
 
 dependencies {
@@ -63,6 +70,7 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.compose.material:material-icons-extended:1.5.4")
     
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
@@ -76,4 +84,16 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
+    
+    // Biometric Authentication
+    implementation("androidx.biometric:biometric-ktx:1.2.0-alpha05")
+    
+    // DataStore for Preferences
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    
+    // WorkManager for background tasks
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    
+    // Kotlinx Serialization for JSON export/import
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 }
