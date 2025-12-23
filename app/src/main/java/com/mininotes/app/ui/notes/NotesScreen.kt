@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
@@ -48,13 +50,20 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.Divider
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
@@ -94,7 +103,8 @@ fun NotesScreen(
     viewModel: NotesViewModel,
     onNoteClick: (Long) -> Unit,
     onNewChecklist: () -> Unit,
-    onOpenTrash: () -> Unit
+    onOpenTrash: () -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var noteToDelete by remember { mutableStateOf<NoteEntity?>(null) }
@@ -110,32 +120,59 @@ fun NotesScreen(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Spacer(Modifier.padding(16.dp))
-                Text("Mini Notes", modifier = Modifier.padding(16.dp), style = MaterialTheme.typography.titleLarge)
-                NavigationDrawerItem(
-                    label = { Text("Notes") },
-                    selected = !uiState.showArchived,
-                    onClick = {
-                        if (uiState.showArchived) viewModel.toggleArchiveView()
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Archive") },
-                    selected = uiState.showArchived,
-                    onClick = {
-                        if (!uiState.showArchived) viewModel.toggleArchiveView()
-                        scope.launch { drawerState.close() }
-                    }
-                )
-                NavigationDrawerItem(
-                    label = { Text("Trash") },
-                    selected = false,
-                    onClick = {
-                        onOpenTrash()
-                        scope.launch { drawerState.close() }
-                    }
-                )
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        "Spreadle Notes",
+                        modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 12.dp),
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Notes") },
+                        icon = { Icon(Icons.Default.Lightbulb, null) },
+                        selected = !uiState.showArchived,
+                        onClick = {
+                            if (uiState.showArchived) viewModel.toggleArchiveView()
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    NavigationDrawerItem(
+                        label = { Text("Archive") },
+                        icon = { Icon(Icons.Outlined.Archive, null) },
+                        selected = uiState.showArchived,
+                        onClick = {
+                            if (!uiState.showArchived) viewModel.toggleArchiveView()
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Trash") },
+                        icon = { Icon(Icons.Outlined.Delete, null) },
+                        selected = false,
+                        onClick = {
+                            onOpenTrash()
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                    NavigationDrawerItem(
+                        label = { Text("Settings") },
+                        icon = { Icon(Icons.Default.Settings, null) },
+                        selected = false,
+                        onClick = {
+                            onOpenSettings()
+                            scope.launch { drawerState.close() }
+                        },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                    )
+                }
             }
         }
     ) {
@@ -186,29 +223,39 @@ fun NotesScreen(
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End) {
                 if (fabExpanded) {
-                    SmallFab(
-                        icon = Icons.Default.CheckBox,
-                        label = "Checklist",
+                    // List Option (Pill)
+                    ExtendedFloatingActionButton(
                         onClick = { 
                             onNewChecklist()
                             fabExpanded = false 
-                        }
+                        },
+                        icon = { Icon(Icons.Default.CheckBox, "New List") },
+                        text = { Text("List") },
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        expanded = true
                     )
                     Spacer(Modifier.height(16.dp))
-                    SmallFab(
-                        icon = Icons.Default.Edit,
-                        label = "Text Note",
+                    
+                    // Text Option (Pill)
+                    ExtendedFloatingActionButton(
                         onClick = { 
                             viewModel.createNewNote(onNoteClick)
                             fabExpanded = false 
-                        }
+                        },
+                        icon = { Icon(Icons.Default.Edit, "New Text Note") },
+                        text = { Text("Text") },
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        expanded = true
                     )
                     Spacer(Modifier.height(16.dp))
                 }
                 
                 FloatingActionButton(
                     onClick = { fabExpanded = !fabExpanded },
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    shape = RoundedCornerShape(16.dp)
                 ) {
                     Icon(
                         if (fabExpanded) Icons.Default.Close else Icons.Default.Add,

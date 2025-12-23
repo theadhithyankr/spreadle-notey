@@ -16,15 +16,22 @@ import com.mininotes.app.ui.trash.TrashViewModel
 @Composable
 fun NavGraph(
     navController: NavHostController,
-    notesViewModel: NotesViewModel,
-    trashViewModel: TrashViewModel,
-    viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory
+    noteUseCases: com.mininotes.app.domain.usecase.NoteUseCases,
+    themeRepository: com.mininotes.app.data.repository.ThemeRepository
 ) {
+    // Create Factories
+    val viewModelFactory = com.mininotes.app.ViewModelFactory(noteUseCases)
+    val settingsViewModelFactory = com.mininotes.app.ui.settings.SettingsViewModelFactory(themeRepository)
+
     NavHost(
         navController = navController,
         startDestination = "notes"
     ) {
         composable("notes") {
+             val notesViewModel: NotesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = viewModelFactory
+            )
+            
             NotesScreen(
                 viewModel = notesViewModel,
                 onNoteClick = { noteId ->
@@ -35,7 +42,21 @@ fun NavGraph(
                 },
                 onOpenTrash = {
                     navController.navigate("trash")
+                },
+                onOpenSettings = {
+                    navController.navigate("settings")
                 }
+            )
+        }
+        
+        composable("settings") {
+            val settingsViewModel: com.mininotes.app.ui.settings.SettingsViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = settingsViewModelFactory
+            )
+            
+            com.mininotes.app.ui.settings.SettingsScreen(
+                viewModel = settingsViewModel,
+                onBack = { navController.popBackStack() }
             )
         }
         
@@ -52,12 +73,10 @@ fun NavGraph(
                  com.mininotes.app.data.NoteType.valueOf(typeStr)
             } catch (e: Exception) { com.mininotes.app.data.NoteType.TEXT }
             
-            // Create ViewModel scoped to this BackStackEntry
             val editorViewModel: EditorViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
                 factory = viewModelFactory
             )
             
-            // Pass initial type to VM if new note
             if (noteId == 0L) {
                  editorViewModel.setInitialType(initialType)
             }
@@ -70,6 +89,10 @@ fun NavGraph(
         }
 
         composable("trash") {
+             val trashViewModel: TrashViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = viewModelFactory
+            )
+            
             TrashScreen(
                 viewModel = trashViewModel,
                 onNavigateBack = { navController.popBackStack() }

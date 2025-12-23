@@ -19,8 +19,17 @@ import com.mininotes.app.ui.editor.EditorViewModel
 import com.mininotes.app.ui.notes.NotesViewModel
 import com.mininotes.app.ui.theme.MiniNotesTheme
 import com.mininotes.app.ui.trash.TrashViewModel
+import androidx.room.Room
+import com.mininotes.app.data.repository.ThemeRepository
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.fillMaxSize
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var noteUseCases: NoteUseCases
+    private lateinit var themeRepository: ThemeRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,7 +38,7 @@ class MainActivity : ComponentActivity() {
         val database = NotesDatabase.getDatabase(applicationContext)
         val repository = NoteRepositoryImpl(database.noteDao())
         
-        val useCases = NoteUseCases(
+        noteUseCases = NoteUseCases(
             getNotes = GetNotes(repository),
             getArchivedNotes = GetArchivedNotes(repository),
             searchNotes = SearchNotes(repository),
@@ -42,26 +51,19 @@ class MainActivity : ComponentActivity() {
             emptyTrash = EmptyTrash(repository)
         )
 
+        themeRepository = ThemeRepository(applicationContext)
+
         setContent {
-            MiniNotesTheme {
-                Surface(color = MaterialTheme.colorScheme.background) {
+            val currentTheme by themeRepository.theme.collectAsState(initial = com.mininotes.app.ui.theme.AppTheme.Dracula)
+            
+            MiniNotesTheme(appTheme = currentTheme) {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     val navController = rememberNavController()
                     
-                    val viewModelFactory = ViewModelFactory(useCases)
-                    
-                    val notesViewModel: NotesViewModel = viewModel(
-                        factory = viewModelFactory
-                    )
-                    
-                    val trashViewModel: TrashViewModel = viewModel(
-                        factory = viewModelFactory
-                    )
-
                     NavGraph(
                         navController = navController,
-                        notesViewModel = notesViewModel,
-                        trashViewModel = trashViewModel,
-                        viewModelFactory = viewModelFactory
+                        noteUseCases = noteUseCases,
+                        themeRepository = themeRepository
                     )
                 }
             }
