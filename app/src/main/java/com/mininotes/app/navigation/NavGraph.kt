@@ -17,8 +17,8 @@ import com.mininotes.app.ui.trash.TrashViewModel
 fun NavGraph(
     navController: NavHostController,
     notesViewModel: NotesViewModel,
-    editorViewModel: EditorViewModel,
-    trashViewModel: TrashViewModel
+    trashViewModel: TrashViewModel,
+    viewModelFactory: androidx.lifecycle.ViewModelProvider.Factory
 ) {
     NavHost(
         navController = navController,
@@ -41,6 +41,12 @@ fun NavGraph(
             arguments = listOf(navArgument("noteId") { type = NavType.LongType })
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getLong("noteId") ?: 0L
+            
+            // Create ViewModel scoped to this BackStackEntry
+            val editorViewModel: EditorViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                factory = viewModelFactory
+            )
+            
             EditorScreen(
                 viewModel = editorViewModel,
                 noteId = noteId,

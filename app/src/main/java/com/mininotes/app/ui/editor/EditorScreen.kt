@@ -64,23 +64,24 @@ fun EditorScreen(
 ) {
     val state by viewModel.state.collectAsState()
     
-    // Local State for Text Fields to prevent Cursor Jumping
-    var titleTextFieldValue by remember { mutableStateOf(TextFieldValue(text = state.title)) }
-    var contentTextFieldValue by remember { mutableStateOf(TextFieldValue(text = state.content)) }
+    // Local State using noteId as key to RESET when switching notes
+    // We ignore stale VM state (e.g. previous note) if ID in state doesn't match requested ID.
+    var titleTextFieldValue by remember(noteId) { 
+        mutableStateOf(TextFieldValue(text = if (state.noteId == noteId) state.title else "")) 
+    }
+    var contentTextFieldValue by remember(noteId) { 
+        mutableStateOf(TextFieldValue(text = if (state.noteId == noteId) state.content else "")) 
+    }
 
-    // Sync only when LOADING data (e.g. initial load)
-    // We check if the VM text is significantly different (e.g. not just a type-ahead) 
-    // or rely on a "loaded" flag. simpler:
-    // If local text is empty and state text is not, sync. 
-    // Or just one-time sync using LaunchedEffect.
+    // Sync only when LOADING data (when state updates asynchronously after load)
     LaunchedEffect(state.title) {
         if (state.title != titleTextFieldValue.text) {
-             titleTextFieldValue = titleTextFieldValue.copy(text = state.title)
+             titleTextFieldValue = TextFieldValue(text = state.title) 
         }
     }
     LaunchedEffect(state.content) {
          if (state.content != contentTextFieldValue.text) {
-             contentTextFieldValue = contentTextFieldValue.copy(text = state.content)
+             contentTextFieldValue = TextFieldValue(text = state.content)
         }
     }
 

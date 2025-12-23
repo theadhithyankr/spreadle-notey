@@ -36,17 +36,21 @@ class EditorViewModel(
     val state: StateFlow<EditorState> = _state.asStateFlow()
 
     private var saveJob: Job? = null
-    private var isLoaded = false
+    // Removed isLoaded to allow switching notes
 
     fun loadNote(id: Long) {
-        if (isLoaded) return // Prevent re-loading on config changes if VM survives
-        if (id != 0L) {
-            viewModelScope.launch {
+        // Idempotency check: If already loaded/loading this ID, skip.
+        if (_state.value.noteId == id) return
+
+        viewModelScope.launch {
+            if (id == 0L) {
+                _state.value = EditorState()
+            } else {
                 try {
                     val note = noteUseCases.getNote(id)
                     if (note != null) {
                         _state.update {
-                            it.copy(
+                            EditorState(
                                 noteId = note.id,
                                 title = note.title,
                                 content = note.content,
@@ -65,7 +69,6 @@ class EditorViewModel(
                 }
             }
         }
-        isLoaded = true
     }
 
     fun updateTitle(newTitle: String) {

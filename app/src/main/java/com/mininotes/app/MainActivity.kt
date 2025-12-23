@@ -47,23 +47,21 @@ class MainActivity : ComponentActivity() {
                 Surface(color = MaterialTheme.colorScheme.background) {
                     val navController = rememberNavController()
                     
+                    val viewModelFactory = ViewModelFactory(useCases)
+                    
                     val notesViewModel: NotesViewModel = viewModel(
-                        factory = ViewModelFactory(useCases)
+                        factory = viewModelFactory
                     )
                     
-                    val editorViewModel: EditorViewModel = viewModel(
-                        factory = ViewModelFactory(useCases)
-                    )
-
                     val trashViewModel: TrashViewModel = viewModel(
-                        factory = ViewModelFactory(useCases)
+                        factory = viewModelFactory
                     )
 
                     NavGraph(
                         navController = navController,
                         notesViewModel = notesViewModel,
-                        editorViewModel = editorViewModel,
-                        trashViewModel = trashViewModel
+                        trashViewModel = trashViewModel,
+                        viewModelFactory = viewModelFactory
                     )
                 }
             }
