@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
@@ -138,9 +139,11 @@ fun NotesScreen(
             }
         }
     ) {
-        Scaffold(
-            topBar = {
-                // Keep-style Floating Search Bar (Only when NOT searching active)
+    var fabExpanded by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            // ... (TopBar code remains, just ensuring context)
                 if (!searchActive) {
                     KeepSearchBarHeader(
                         title = if (uiState.showArchived) "Archive" else "Search your notes",
@@ -178,52 +181,93 @@ fun NotesScreen(
                         )
                     }
                 }
-            },
-            bottomBar = {
-                KeepBottomBar(
-                    onNewList = onNewChecklist
-                )
-            },
-            floatingActionButton = {
+        },
+        // Remove BottomBar
+        floatingActionButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                if (fabExpanded) {
+                    SmallFab(
+                        icon = Icons.Default.CheckBox,
+                        label = "Checklist",
+                        onClick = { 
+                            onNewChecklist()
+                            fabExpanded = false 
+                        }
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    SmallFab(
+                        icon = Icons.Default.Edit,
+                        label = "Text Note",
+                        onClick = { 
+                            viewModel.createNewNote(onNoteClick)
+                            fabExpanded = false 
+                        }
+                    )
+                    Spacer(Modifier.height(16.dp))
+                }
+                
                 FloatingActionButton(
-                    onClick = { viewModel.createNewNote(onNoteClick) },
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant, // Keepish color
-                    // contentColor matches
+                    onClick = { fabExpanded = !fabExpanded },
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Create Note", modifier = Modifier.size(36.dp))
-                }
-            }
-        ) { paddingValues ->
-             Box(Modifier.padding(paddingValues)) {
-                if (uiState.notes.isEmpty()) {
-                    EmptyNotesView(
-                        isArchived = uiState.showArchived,
-                        isSearching = uiState.searchQuery.isNotEmpty(),
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    NotesGrid(
-                        notes = uiState.notes,
-                        searchQuery = uiState.searchQuery,
-                        isGridView = isGridView,
-                        onNoteClick = onNoteClick,
-                        onNoteLongPress = { noteToDelete = it },
-                        onTogglePin = { viewModel.togglePinNote(it) },
-                        onToggleArchive = { viewModel.toggleArchiveNote(it) },
-                        modifier = Modifier.fillMaxSize()
+                    Icon(
+                        if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
+                        contentDescription = "Create",
+                        modifier = Modifier.size(36.dp)
                     )
                 }
             }
-            
-             if (noteToDelete != null) {
-                DeleteConfirmationDialog(
-                    onConfirm = {
-                        viewModel.moveToTrash(noteToDelete!!)
-                        noteToDelete = null
-                    },
-                    onDismiss = { noteToDelete = null }
+        }
+    ) { paddingValues ->
+        Box(Modifier.padding(paddingValues)) {
+             if (uiState.notes.isEmpty()) {
+                EmptyNotesView(
+                    isArchived = uiState.showArchived,
+                    isSearching = uiState.searchQuery.isNotEmpty(),
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                NotesGrid(
+                    notes = uiState.notes,
+                    searchQuery = uiState.searchQuery,
+                    isGridView = isGridView,
+                    onNoteClick = onNoteClick,
+                    onNoteLongPress = { noteToDelete = it },
+                    onTogglePin = { viewModel.togglePinNote(it) },
+                    onToggleArchive = { viewModel.toggleArchiveNote(it) },
+                    modifier = Modifier.fillMaxSize()
                 )
             }
+        }
+        if (noteToDelete != null) {
+            DeleteConfirmationDialog(
+                onConfirm = {
+                    viewModel.moveToTrash(noteToDelete!!)
+                    noteToDelete = null
+                },
+                onDismiss = { noteToDelete = null }
+            )
+        }
+    }
+}
+}
+
+@Composable
+fun SmallFab(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(end = 4.dp)) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = RoundedCornerShape(8.dp),
+            shadowElevation = 2.dp,
+            modifier = Modifier.padding(end = 8.dp)
+        ) {
+            Text(label, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelMedium)
+        }
+        androidx.compose.material3.SmallFloatingActionButton(
+            onClick = onClick,
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Icon(icon, contentDescription = label)
         }
     }
 }
