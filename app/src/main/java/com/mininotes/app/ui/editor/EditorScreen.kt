@@ -11,8 +11,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -95,6 +98,9 @@ fun EditorScreen(
         onBackClick()
     }
 
+    val contentFocusRequester = remember { FocusRequester() }
+    val interactionSource = remember { MutableInteractionSource() }
+    
     var showMenu by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -148,6 +154,10 @@ fun EditorScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null
+                ) { contentFocusRequester.requestFocus() } 
                 .padding(horizontal = 20.dp, vertical = 10.dp)
                 .imePadding()
         ) {
@@ -224,7 +234,9 @@ fun EditorScreen(
                         }
                         innerTextField()
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .focusRequester(contentFocusRequester)
                 )
             }
         }
