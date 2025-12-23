@@ -30,6 +30,9 @@ fun NavGraph(
                 onNoteClick = { noteId ->
                     navController.navigate("editor/$noteId")
                 },
+                onNewChecklist = {
+                    navController.navigate("editor/0?type=CHECKLIST")
+                },
                 onOpenTrash = {
                     navController.navigate("trash")
                 }
@@ -37,15 +40,27 @@ fun NavGraph(
         }
         
         composable(
-            route = "editor/{noteId}",
-            arguments = listOf(navArgument("noteId") { type = NavType.LongType })
+            route = "editor/{noteId}?type={type}",
+            arguments = listOf(
+                navArgument("noteId") { type = NavType.LongType },
+                navArgument("type") { type = NavType.StringType; defaultValue = "TEXT" }
+            )
         ) { backStackEntry ->
             val noteId = backStackEntry.arguments?.getLong("noteId") ?: 0L
+            val typeStr = backStackEntry.arguments?.getString("type") ?: "TEXT"
+            val initialType = try {
+                 com.mininotes.app.data.NoteType.valueOf(typeStr)
+            } catch (e: Exception) { com.mininotes.app.data.NoteType.TEXT }
             
             // Create ViewModel scoped to this BackStackEntry
             val editorViewModel: EditorViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
                 factory = viewModelFactory
             )
+            
+            // Pass initial type to VM if new note
+            if (noteId == 0L) {
+                 editorViewModel.setInitialType(initialType)
+            }
             
             EditorScreen(
                 viewModel = editorViewModel,

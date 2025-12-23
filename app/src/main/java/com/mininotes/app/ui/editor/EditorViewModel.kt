@@ -36,6 +36,12 @@ class EditorViewModel(
     val state: StateFlow<EditorState> = _state.asStateFlow()
 
     private var saveJob: Job? = null
+    
+    fun setInitialType(type: NoteType) {
+        if (_state.value.noteId == 0L) {
+            _state.update { it.copy(type = type) }
+        }
+    }
     // Removed isLoaded to allow switching notes
 
     fun loadNote(id: Long) {
