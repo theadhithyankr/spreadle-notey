@@ -16,7 +16,8 @@ data class NotesUiState(
     val notes: List<NoteEntity> = emptyList(),
     val sortOrder: SortOrder = SortOrder.UPDATED_DESC,
     val showArchived: Boolean = false,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val selectedNoteIds: Set<Long> = emptySet()
 )
 
 class NotesViewModel(
@@ -47,6 +48,8 @@ class NotesViewModel(
         }.launchIn(viewModelScope)
     }
 
+    // ... (Existing methods: updateSearchQuery, updateSortOrder, toggleArchiveView, createNewNote) ... 
+    
     fun updateSearchQuery(query: String) {
         _uiState.value = _uiState.value.copy(searchQuery = query)
         getNotes()
@@ -61,28 +64,14 @@ class NotesViewModel(
         val newState = !_uiState.value.showArchived
         _uiState.value = _uiState.value.copy(
             showArchived = newState,
-            searchQuery = "" // Clear search when switching views usually
+            searchQuery = "",
+            selectedNoteIds = emptySet() // Clear selection on view switch
         )
         getNotes()
     }
 
     fun createNewNote(onNoteCreated: (Long) -> Unit) {
         viewModelScope.launch {
-            // We create a temp empty note to get an ID or just navigate with ID=0
-            // Convention: Editor handles ID=0 as new note.
-            // But if we want to insert immediately:
-            /*
-            val newNote = NoteEntity(title = "", content = "")
-            try {
-                // AddNote throws if empty, so we must allow creating empty ID 0 in UI?
-                // Or NoteDao.insertNote returns ID.
-                // Current AddNote use case logic:
-                // if (note.id <= 0) repository.insertNote
-                // But it checks for isBlank.
-            } catch(e: Exception) { ... }
-            */
-            // Better approach: Navigate to Editor with ID -1 (new)
-            // and let EditorViewModel handle the initial save or insert.
             onNoteCreated(-1L) 
         }
     }
@@ -108,6 +97,44 @@ class NotesViewModel(
     fun moveToTrash(note: NoteEntity) {
         viewModelScope.launch {
             noteUseCases.deleteNote(note)
+        }
+    }
+    
+    // Selection Logic
+    fun startSelection(noteId: Long) {
+        _uiState.value = _uiState.value.copy(selectedNoteIds = setOf(noteId))
+    }
+    
+    fun toggleSelection(noteId: Long) {
+        val current = _uiState.value.selectedNoteIds.toMutableSet()
+        if (current.contains(noteId)) current.remove(noteId) else current.add(noteId)
+        
+        _uiState.value = _uiState.value.copy(selectedNoteIds = current)
+    }
+    
+    fun clearSelection() {
+        _uiState.value = _uiState.value.copy(selectedNoteIds = emptySet())
+    }
+    
+    fun deleteSelectedNotes() {
+        val selectedIds = _uiState.value.selectedNoteIds
+        viewModelScope.launch {
+            val notesToDelete = _uiState.value.notes.filter { it.id in selectedIds }
+            notesToDelete.forEach { note ->
+                noteUseCases.deleteNote(note)
+            }
+            clearSelection()
+        }
+    }
+    
+    fun pinSelectedNotes(pin: Boolean) {
+        val selectedIds = _uiState.value.selectedNoteIds
+        viewModelScope.launch {
+            val notesToUpdate = _uiState.value.notes.filter { it.id in selectedIds }
+            notesToUpdate.forEach { note ->
+                noteUseCases.addNote(note.copy(isPinned = pin, updatedAt = System.currentTimeMillis()))
+            }
+            clearSelection()
         }
     }
 }

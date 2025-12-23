@@ -2,7 +2,9 @@ package com.mininotes.app.ui.notes
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -31,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
@@ -46,6 +49,7 @@ import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -176,11 +180,24 @@ fun NotesScreen(
             }
         }
     ) {
+    val inSelectionMode = uiState.selectedNoteIds.isNotEmpty()
     var fabExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            // ... (TopBar code remains, just ensuring context)
+            if (inSelectionMode) {
+                SelectionTopAppBar(
+                    selectedCount = uiState.selectedNoteIds.size,
+                    onClearSelection = { viewModel.clearSelection() },
+                    onPin = { viewModel.pinSelectedNotes(true) }, // Or toggle based on logic, but usually Pin
+                    onArchive = { /* Implement bulk archive if needed */ }, 
+                    onDelete = { 
+                         // Show confirmation or just delete? Material design often asks if > 1
+                         // For now direct delete as requested, or reusable dialog
+                         noteToDelete = NoteEntity(id=-2, title="", content="dummy", updatedAt=0, createdAt=0) // Dummy signal for dialog
+                    }
+                )
+            } else {
                 if (!searchActive) {
                     KeepSearchBarHeader(
                         title = if (uiState.showArchived) "Archive" else "Search your notes",
@@ -211,57 +228,63 @@ fun NotesScreen(
                             notes = uiState.notes,
                             searchQuery = uiState.searchQuery,
                             isGridView = isGridView,
-                            onNoteClick = onNoteClick,
-                            onNoteLongPress = { noteToDelete = it },
+                            selectedNoteIds = uiState.selectedNoteIds,
+                            onNoteClick = { 
+                                if (inSelectionMode) viewModel.toggleSelection(it) 
+                                else onNoteClick(it) 
+                            },
+                            onNoteLongPress = { viewModel.startSelection(it) },
                             onTogglePin = { viewModel.togglePinNote(it) },
                             onToggleArchive = { viewModel.toggleArchiveNote(it) }
                         )
                     }
                 }
+            }
         },
         // Remove BottomBar
         floatingActionButton = {
-            Column(horizontalAlignment = Alignment.End) {
-                if (fabExpanded) {
-                    // List Option (Pill)
-                    ExtendedFloatingActionButton(
-                        onClick = { 
-                            onNewChecklist()
-                            fabExpanded = false 
-                        },
-                        icon = { Icon(Icons.Default.CheckBox, "New List") },
-                        text = { Text("List") },
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                        expanded = true
-                    )
-                    Spacer(Modifier.height(16.dp))
+            if (!inSelectionMode) {
+                Column(horizontalAlignment = Alignment.End) {
+                    if (fabExpanded) {
+                        // ... (FAB content) ...
+                        ExtendedFloatingActionButton(
+                            onClick = { 
+                                onNewChecklist()
+                                fabExpanded = false 
+                            },
+                            icon = { Icon(Icons.Default.CheckBox, "New List") },
+                            text = { Text("List") },
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            expanded = true
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        
+                        ExtendedFloatingActionButton(
+                            onClick = { 
+                                viewModel.createNewNote(onNoteClick)
+                                fabExpanded = false 
+                            },
+                            icon = { Icon(Icons.Default.Edit, "New Text Note") },
+                            text = { Text("Text") },
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            expanded = true
+                        )
+                        Spacer(Modifier.height(16.dp))
+                    }
                     
-                    // Text Option (Pill)
-                    ExtendedFloatingActionButton(
-                        onClick = { 
-                            viewModel.createNewNote(onNoteClick)
-                            fabExpanded = false 
-                        },
-                        icon = { Icon(Icons.Default.Edit, "New Text Note") },
-                        text = { Text("Text") },
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        expanded = true
-                    )
-                    Spacer(Modifier.height(16.dp))
-                }
-                
-                FloatingActionButton(
-                    onClick = { fabExpanded = !fabExpanded },
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(
-                        if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
-                        contentDescription = "Create",
-                        modifier = Modifier.size(36.dp)
-                    )
+                    FloatingActionButton(
+                        onClick = { fabExpanded = !fabExpanded },
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(
+                            if (fabExpanded) Icons.Default.Close else Icons.Default.Add,
+                            contentDescription = "Create",
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
                 }
             }
         }
@@ -278,8 +301,12 @@ fun NotesScreen(
                     notes = uiState.notes,
                     searchQuery = uiState.searchQuery,
                     isGridView = isGridView,
-                    onNoteClick = onNoteClick,
-                    onNoteLongPress = { noteToDelete = it },
+                    selectedNoteIds = uiState.selectedNoteIds,
+                    onNoteClick = { 
+                        if (inSelectionMode) viewModel.toggleSelection(it) 
+                        else onNoteClick(it) 
+                    },
+                    onNoteLongPress = { viewModel.startSelection(it) },
                     onTogglePin = { viewModel.togglePinNote(it) },
                     onToggleArchive = { viewModel.toggleArchiveNote(it) },
                     modifier = Modifier.fillMaxSize()
@@ -287,12 +314,18 @@ fun NotesScreen(
             }
         }
         if (noteToDelete != null) {
+            val isMultiDelete = noteToDelete?.id == -2L
             DeleteConfirmationDialog(
                 onConfirm = {
-                    viewModel.moveToTrash(noteToDelete!!)
+                    if (isMultiDelete) {
+                        viewModel.deleteSelectedNotes()
+                    } else {
+                        viewModel.moveToTrash(noteToDelete!!)
+                    }
                     noteToDelete = null
                 },
-                onDismiss = { noteToDelete = null }
+                onDismiss = { noteToDelete = null },
+                isMulti = isMultiDelete
             )
         }
     }
@@ -385,8 +418,9 @@ fun NotesGrid(
     notes: List<NoteEntity>,
     searchQuery: String,
     isGridView: Boolean,
+    selectedNoteIds: Set<Long>,
     onNoteClick: (Long) -> Unit,
-    onNoteLongPress: (NoteEntity) -> Unit,
+    onNoteLongPress: (Long) -> Unit,
     onTogglePin: (NoteEntity) -> Unit,
     onToggleArchive: (NoteEntity) -> Unit,
     modifier: Modifier = Modifier
@@ -399,11 +433,14 @@ fun NotesGrid(
         modifier = modifier
     ) {
         items(notes, key = { it.id }) { note ->
+            val isSelected = selectedNoteIds.contains(note.id)
             NoteItem(
                 note = note,
                 searchQuery = searchQuery,
+                isSelected = isSelected,
+                isInSelectionMode = selectedNoteIds.isNotEmpty(),
                 onClick = { onNoteClick(note.id) },
-                onLongPress = { onNoteLongPress(note) },
+                onLongPress = { onNoteLongPress(note.id) },
                 onTogglePin = { onTogglePin(note) },
                 onToggleArchive = { onToggleArchive(note) }
             )
@@ -411,11 +448,13 @@ fun NotesGrid(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun NoteItem(
     note: NoteEntity,
     searchQuery: String,
+    isSelected: Boolean,
+    isInSelectionMode: Boolean,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     onTogglePin: () -> Unit,
@@ -425,17 +464,22 @@ fun NoteItem(
     val cardColor = note.color?.let { 
         try { Color(android.graphics.Color.parseColor(it)) } 
         catch (e: Exception) { null }
-    } ?: MaterialTheme.colorScheme.surface // Default to surface (dark)
+    } ?: MaterialTheme.colorScheme.surface 
     
-    val borderColor = MaterialTheme.colorScheme.outlineVariant
+    // Highlight logic
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+    val borderStroke = if (isSelected) 3.dp else 1.dp
     
     OutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick), // Long press handled via combinedClickable if needed, for now standard clickable
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongPress
+            ), 
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.outlinedCardColors(containerColor = cardColor),
-        border = BorderStroke(1.dp, borderColor)
+        border = BorderStroke(borderStroke, borderColor)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Content
@@ -540,11 +584,11 @@ fun highlightSearchQuery(text: String, query: String) = buildAnnotatedString {
 }
 
 @Composable
-fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+fun DeleteConfirmationDialog(onConfirm: () -> Unit, onDismiss: () -> Unit, isMulti: Boolean = false) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete Note") },
-        text = { Text("Move this note to trash?") },
+        title = { Text(if (isMulti) "Delete Selected?" else "Delete Note") },
+        text = { Text(if (isMulti) "Move selected notes to trash?" else "Move this note to trash?") },
         confirmButton = { TextButton(onClick = onConfirm) { Text("Delete") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
@@ -561,4 +605,37 @@ fun EmptyNotesView(isArchived: Boolean, isSearching: Boolean, modifier: Modifier
              color = MaterialTheme.colorScheme.onSurfaceVariant
          )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SelectionTopAppBar(
+    selectedCount: Int,
+    onClearSelection: () -> Unit,
+    onPin: () -> Unit,
+    onArchive: () -> Unit,
+    onDelete: () -> Unit
+) {
+    CenterAlignedTopAppBar(
+        title = { Text("$selectedCount Selected", style = MaterialTheme.typography.titleMedium) },
+        navigationIcon = {
+            IconButton(onClick = onClearSelection) {
+                Icon(Icons.Default.Close, "Clear Selection")
+            }
+        },
+        actions = {
+            IconButton(onClick = onPin) {
+                Icon(Icons.Filled.PushPin, "Pin")
+            }
+            IconButton(onClick = onArchive) {
+                Icon(Icons.Outlined.Archive, "Archive")
+            }
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Outlined.Delete, "Delete")
+            }
+        },
+        colors = androidx.compose.material3.TopAppBarDefaults.centerAlignedTopAppBarColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    )
 }
