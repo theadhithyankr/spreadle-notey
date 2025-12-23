@@ -1,11 +1,13 @@
 package com.mininotes.app.ui.trash
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -49,6 +51,8 @@ fun TrashScreen(
 ) {
     val deletedNotes by viewModel.deletedNotes.collectAsState()
     var noteToDelete by remember { mutableStateOf<NoteEntity?>(null) }
+    var noteToManage by remember { mutableStateOf<NoteEntity?>(null) }
+    var noteToView by remember { mutableStateOf<NoteEntity?>(null) }
     var showEmptyTrashDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -94,11 +98,35 @@ fun TrashScreen(
                 items(deletedNotes, key = { it.id }) { note ->
                     TrashNoteItem(
                         note = note,
-                        onRestore = { viewModel.restoreNote(note) },
-                        onPermanentDelete = { noteToDelete = note }
+                        onClick = { noteToManage = note }
                     )
                 }
             }
+        }
+
+        if (noteToManage != null) {
+            TrashOptionsDialog(
+                onRestore = {
+                    viewModel.restoreNote(noteToManage!!)
+                    noteToManage = null
+                },
+                onDelete = {
+                    noteToDelete = noteToManage
+                    noteToManage = null
+                },
+                onView = {
+                    noteToView = noteToManage
+                    noteToManage = null
+                },
+                onDismiss = { noteToManage = null }
+            )
+        }
+
+        if (noteToView != null) {
+            ViewNoteDialog(
+                note = noteToView!!,
+                onDismiss = { noteToView = null }
+            )
         }
 
         if (noteToDelete != null) {
@@ -127,8 +155,7 @@ fun TrashScreen(
 @Composable
 fun TrashNoteItem(
     note: NoteEntity,
-    onRestore: () -> Unit,
-    onPermanentDelete: () -> Unit
+    onClick: () -> Unit
 ) {
     val daysUntilDeletion = note.deletedAt?.let {
         30 - TimeUnit.MILLISECONDS.toDays(System.currentTimeMillis() - it)
@@ -137,10 +164,7 @@ fun TrashNoteItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onRestore,
-                onLongClick = onPermanentDelete
-            ),
+            .clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -170,15 +194,53 @@ fun TrashNoteItem(
                 modifier = Modifier.padding(top = 8.dp),
                 color = MaterialTheme.colorScheme.error
             )
-            
-            Text(
-                text = "Tap to restore • Long press to delete permanently",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 4.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
+}
+
+@Composable
+fun TrashOptionsDialog(
+    onRestore: () -> Unit,
+    onDelete: () -> Unit,
+    onView: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Note Options") },
+        text = { 
+            Column {
+                TextButton(onClick = onView, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Text("View Note", color = MaterialTheme.colorScheme.onSurface)
+                }
+                TextButton(onClick = onRestore, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Text("Restore Note", color = MaterialTheme.colorScheme.primary)
+                }
+                TextButton(onClick = onDelete, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                    Text("Delete Permanently", color = MaterialTheme.colorScheme.error)
+                }
+            }
+        },
+        confirmButton = { },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+fun ViewNoteDialog(
+    note: NoteEntity,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(note.title.ifEmpty { "Untitled" }) },
+        text = { 
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                Text(note.content)
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } }
+    )
 }
 
 @Composable

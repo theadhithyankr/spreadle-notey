@@ -21,6 +21,8 @@ import com.mininotes.app.ui.theme.MiniNotesTheme
 import com.mininotes.app.ui.trash.TrashViewModel
 import androidx.room.Room
 import com.mininotes.app.data.repository.ThemeRepository
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -52,9 +54,12 @@ class MainActivity : ComponentActivity() {
         )
 
         themeRepository = ThemeRepository(applicationContext)
+        
+        // Load initial theme synchronously to prevent flash
+        val initialTheme = runBlocking { themeRepository.theme.first() }
 
         setContent {
-            val currentTheme by themeRepository.theme.collectAsState(initial = com.mininotes.app.ui.theme.AppTheme.Dracula)
+            val currentTheme by themeRepository.theme.collectAsState(initial = initialTheme)
             
             MiniNotesTheme(appTheme = currentTheme) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {

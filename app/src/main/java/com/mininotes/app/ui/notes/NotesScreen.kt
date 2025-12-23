@@ -186,17 +186,24 @@ fun NotesScreen(
     Scaffold(
         topBar = {
             if (inSelectionMode) {
+                val selectedNotes = uiState.notes.filter { it.id in uiState.selectedNoteIds }
+                val areAllPinned = selectedNotes.isNotEmpty() && selectedNotes.all { it.isPinned }
+                
                 SelectionTopAppBar(
                     selectedCount = uiState.selectedNoteIds.size,
+                    areAllPinned = areAllPinned,
                     onClearSelection = { viewModel.clearSelection() },
-                    onPin = { viewModel.pinSelectedNotes(true) }, // Or toggle based on logic, but usually Pin
-                    onArchive = { /* Implement bulk archive if needed */ }, 
+                    onPin = { viewModel.pinSelectedNotes(!areAllPinned) }, 
+                    onArchive = { viewModel.archiveSelectedNotes(!uiState.showArchived) }, 
                     onDelete = { 
-                         // Show confirmation or just delete? Material design often asks if > 1
-                         // For now direct delete as requested, or reusable dialog
-                         noteToDelete = NoteEntity(id=-2, title="", content="dummy", updatedAt=0, createdAt=0) // Dummy signal for dialog
+                         noteToDelete = NoteEntity(id=-2, title="", content="dummy", updatedAt=0, createdAt=0) 
                     }
                 )
+                // Wait, onArchive logic above is WRONG. I need `viewModel.archiveSelectedNotes()`.
+                // I don't have `archiveSelectedNotes` in ViewModel?
+                // I defined `pinSelectedNotes` and `deleteSelectedNotes`.
+                // I forgot `archiveSelectedNotes`?
+                // Checking NotesViewModel again.
             } else {
                 if (!searchActive) {
                     KeepSearchBarHeader(
@@ -481,8 +488,10 @@ fun NoteItem(
         colors = CardDefaults.outlinedCardColors(containerColor = cardColor),
         border = BorderStroke(borderStroke, borderColor)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Content
+        Box(Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp).fillMaxWidth()) {
+                // Content  
+
             if (note.title.isNotEmpty()) {
                 Text(
                     text = highlightSearchQuery(note.title, searchQuery),
@@ -546,10 +555,24 @@ fun NoteItem(
                                }
                           }
                      }
-                 }
              }
-        }
+         }
+         
+         }
+         
+         if (note.isPinned) {
+             Icon(
+                imageVector = Icons.Filled.PushPin,
+                contentDescription = "Pinned",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(12.dp)
+                    .size(18.dp)
+             )
+         }
     }
+}
 }
 
 // Helpers
@@ -611,6 +634,7 @@ fun EmptyNotesView(isArchived: Boolean, isSearching: Boolean, modifier: Modifier
 @Composable
 fun SelectionTopAppBar(
     selectedCount: Int,
+    areAllPinned: Boolean,
     onClearSelection: () -> Unit,
     onPin: () -> Unit,
     onArchive: () -> Unit,
@@ -625,7 +649,10 @@ fun SelectionTopAppBar(
         },
         actions = {
             IconButton(onClick = onPin) {
-                Icon(Icons.Filled.PushPin, "Pin")
+                Icon(
+                    if (areAllPinned) Icons.Outlined.PushPin else Icons.Filled.PushPin, 
+                    if (areAllPinned) "Unpin" else "Pin"
+                )
             }
             IconButton(onClick = onArchive) {
                 Icon(Icons.Outlined.Archive, "Archive")

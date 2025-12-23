@@ -22,7 +22,11 @@ enum class AppTheme {
 
 private val DraculaScheme = darkColorScheme(
     primary = DraculaPurple,
+    onPrimary = DraculaBackground,
+    primaryContainer = DraculaCurrentLine,
+    onPrimaryContainer = DraculaPurple,
     secondary = DraculaPink,
+    onSecondary = DraculaBackground,
     background = DraculaBackground,
     surface = DraculaBackground,
     surfaceVariant = DraculaCurrentLine,
@@ -34,6 +38,9 @@ private val DraculaScheme = darkColorScheme(
 
 private val GreyScheme = darkColorScheme(
     primary = GreyPrimary,
+    onPrimary = Color.Black,
+    primaryContainer = GreySurface,
+    onPrimaryContainer = Color.White,
     secondary = GreyAccent,
     background = GreyBackground,
     surface = GreyBackground,
@@ -45,6 +52,9 @@ private val GreyScheme = darkColorScheme(
 
 private val BeigeScheme = lightColorScheme(
     primary = BeigePrimary,
+    onPrimary = Color.White,
+    primaryContainer = BeigeSurface,
+    onPrimaryContainer = BeigePrimary,
     secondary = BeigeAccent,
     background = BeigeBackground,
     surface = BeigeBackground,
@@ -56,6 +66,9 @@ private val BeigeScheme = lightColorScheme(
 
 private val MauveScheme = lightColorScheme(
     primary = MauvePrimary,
+    onPrimary = Color.White,
+    primaryContainer = MauveSurface,
+    onPrimaryContainer = MauvePrimary,
     secondary = MauveAccent,
     background = MauveBackground,
     surface = MauveBackground,
@@ -67,6 +80,9 @@ private val MauveScheme = lightColorScheme(
 
 private val PeachScheme = lightColorScheme(
     primary = PeachPrimary,
+    onPrimary = Color.White,
+    primaryContainer = PeachSurface,
+    onPrimaryContainer = PeachPrimary,
     secondary = PeachAccent,
     background = PeachBackground,
     surface = PeachBackground,
@@ -78,6 +94,9 @@ private val PeachScheme = lightColorScheme(
 
 private val LightScheme = lightColorScheme(
     primary = LightPrimary,
+    onPrimary = Color.White,
+    primaryContainer = LightSurface,
+    onPrimaryContainer = LightPrimary,
     secondary = LightAccent,
     background = LightBackground,
     surface = LightBackground,

@@ -137,4 +137,14 @@ class NotesViewModel(
             clearSelection()
         }
     }
+    fun archiveSelectedNotes(archive: Boolean) {
+        val selectedIds = _uiState.value.selectedNoteIds
+        viewModelScope.launch {
+            val notesToUpdate = _uiState.value.notes.filter { it.id in selectedIds }
+            notesToUpdate.forEach { note ->
+                noteUseCases.addNote(note.copy(isArchived = archive, updatedAt = System.currentTimeMillis()))
+            }
+            clearSelection()
+        }
+    }
 }
