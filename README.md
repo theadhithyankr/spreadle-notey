@@ -21,7 +21,7 @@ The app is completely offline-first, ensuring your data remains private and secu
 ## Build & Run
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/mininotes.git
+   git clone https://github.com/theadhithyankr/notey.git
    ```
 2. Open the project in Android Studio.
 3. Wait for Gradle Sync to complete.
