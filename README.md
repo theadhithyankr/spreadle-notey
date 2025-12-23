@@ -1,3 +1,7 @@
+<div align="center">
+  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="App Icon" width="128" />
+</div>
+
 # Spreadle Notey - Capture Your Thoughts
 A beautiful, modern, and privacy-focused note-taking application for Android.
 
