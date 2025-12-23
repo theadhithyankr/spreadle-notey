@@ -126,7 +126,7 @@ fun NotesScreen(
             ModalDrawerSheet {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        "Spreadle Notes",
+                        "Spreadle Notey",
                         modifier = Modifier.padding(start = 24.dp, top = 24.dp, bottom = 12.dp),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontFamily = androidx.compose.ui.text.font.FontFamily.SansSerif,
