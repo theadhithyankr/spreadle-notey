@@ -14,18 +14,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.Checkbox
@@ -50,13 +51,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mininotes.app.data.NoteType
+import androidx.compose.foundation.border
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,7 +74,6 @@ fun EditorScreen(
     val state by viewModel.state.collectAsState()
     
     // Local State using noteId as key to RESET when switching notes
-    // We ignore stale VM state (e.g. previous note) if ID in state doesn't match requested ID.
     var titleTextFieldValue by remember(noteId) { 
         mutableStateOf(TextFieldValue(text = if (state.noteId == noteId) state.title else "")) 
     }
@@ -76,23 +81,16 @@ fun EditorScreen(
         mutableStateOf(TextFieldValue(text = if (state.noteId == noteId) state.content else "")) 
     }
 
-    // Sync only when LOADING data (when state updates asynchronously after load)
+    // Sync state
     LaunchedEffect(state.title) {
-        if (state.title != titleTextFieldValue.text) {
-             titleTextFieldValue = TextFieldValue(text = state.title) 
-        }
+        if (state.title != titleTextFieldValue.text) { titleTextFieldValue = TextFieldValue(text = state.title) }
     }
     LaunchedEffect(state.content) {
-         if (state.content != contentTextFieldValue.text) {
-             contentTextFieldValue = TextFieldValue(text = state.content)
-        }
+         if (state.content != contentTextFieldValue.text) { contentTextFieldValue = TextFieldValue(text = state.content) }
     }
 
-    LaunchedEffect(noteId) {
-        viewModel.loadNote(noteId)
-    }
+    LaunchedEffect(noteId) { viewModel.loadNote(noteId) }
     
-    // Auto-save on back
     BackHandler {
         viewModel.saveNote()
         onBackClick()
@@ -101,7 +99,22 @@ fun EditorScreen(
     val contentFocusRequester = remember { FocusRequester() }
     val interactionSource = remember { MutableInteractionSource() }
     
+    // Focus management for checklist
+    var focusIndex by remember { mutableStateOf(-1) }
+    
     var showMenu by remember { mutableStateOf(false) }
+
+    if (state.type == NoteType.DRAWING) {
+        DrawingEditor(
+            initialFilePath = state.content,
+            onSave = { path ->
+                viewModel.updateContent(path)
+                viewModel.saveNote()
+            },
+            onBack = onBackClick
+        )
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -136,10 +149,26 @@ fun EditorScreen(
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text(if (state.type == NoteType.CHECKLIST) "Show Checkboxes" else "Hide Checkboxes") },
+                            text = { Text(if (state.type == NoteType.CHECKLIST) "Show Text" else "Show Checkboxes") },
                             leadingIcon = { Icon(Icons.Default.CheckBox, null) },
                             onClick = {
                                 viewModel.toggleNoteType()
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Grocery Mode") },
+                            leadingIcon = { Icon(Icons.Default.ShoppingCart, null) },
+                            onClick = {
+                                viewModel.setNoteType(NoteType.GROCERY)
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Drawing") },
+                            leadingIcon = { Icon(Icons.Default.Brush, null) },
+                            onClick = {
+                                viewModel.setNoteType(NoteType.DRAWING)
                                 showMenu = false
                             }
                         )
@@ -185,16 +214,55 @@ fun EditorScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (state.type == NoteType.CHECKLIST) {
-                // Checklist
+            if (state.type == NoteType.CHECKLIST || state.type == NoteType.GROCERY) {
+                // Checklist or Grocery List
                 Column {
                     state.checklistItems.forEachIndexed { index, item ->
-                        ChecklistItemRow(
-                            item = item,
-                            onCheckedChange = { viewModel.toggleChecklistItem(index) },
-                            onTextChange = { viewModel.updateChecklistItem(index, it) },
-                            onDelete = { viewModel.removeChecklistItem(index) }
-                        )
+                        val itemFocusRequester = remember { FocusRequester() }
+                        
+                        LaunchedEffect(focusIndex) {
+                            if (focusIndex == index) {
+                                itemFocusRequester.requestFocus()
+                                focusIndex = -1 // Reset after focusing
+                            }
+                        }
+
+                        if (state.type == NoteType.GROCERY) {
+                             GroceryItemRow(
+                                item = item,
+                                focusRequester = itemFocusRequester,
+                                onCheckedChange = { viewModel.toggleChecklistItem(index) },
+                                onTextChange = { 
+                                    if (it.contains("\n")) {
+                                        val safeText = it.replace("\n", "")
+                                        viewModel.updateChecklistItem(index, safeText)
+                                        viewModel.addChecklistItem(index + 1, "")
+                                        focusIndex = index + 1
+                                    } else {
+                                        viewModel.updateChecklistItem(index, it) 
+                                    }
+                                },
+                                onDetailsChange = { q, u, p, c ->  viewModel.updateGroceryItem(index, q, u, p, c) },
+                                onDelete = { viewModel.removeChecklistItem(index) }
+                            )
+                        } else {
+                            ChecklistItemRow(
+                                item = item,
+                                focusRequester = itemFocusRequester,
+                                onCheckedChange = { viewModel.toggleChecklistItem(index) },
+                                onTextChange = { 
+                                    if (it.contains("\n")) {
+                                        val safeText = it.replace("\n", "")
+                                        viewModel.updateChecklistItem(index, safeText)
+                                        viewModel.addChecklistItem(index + 1, "")
+                                        focusIndex = index + 1
+                                    } else {
+                                        viewModel.updateChecklistItem(index, it) 
+                                    }
+                                },
+                                onDelete = { viewModel.removeChecklistItem(index) }
+                            )
+                        }
                     }
                     
                     // Add Item Button
@@ -207,7 +275,18 @@ fun EditorScreen(
                     ) {
                         Icon(Icons.Default.Add, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.width(12.dp))
-                        Text("List item", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(if(state.type == NoteType.GROCERY) "Add Item" else "List item", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    
+                    if (state.type == NoteType.GROCERY) {
+                        // Calculate Total Price (Simple sum)
+                         val total = state.checklistItems.sumOf { 
+                             try { (it.price?.toDouble() ?: 0.0) * (it.quantity?.toDouble() ?: 1.0) } catch(e: Exception) { 0.0 } 
+                         }
+                         if (total > 0) {
+                             Spacer(Modifier.height(16.dp))
+                             Text("Total Estimated Cost: $${String.format("%.2f", total)}", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                         }
                     }
                 }
             } else {
@@ -246,6 +325,7 @@ fun EditorScreen(
 @Composable
 fun ChecklistItemRow(
     item: com.mininotes.app.data.ChecklistItem,
+    focusRequester: FocusRequester,
     onCheckedChange: (Boolean) -> Unit,
     onTextChange: (String) -> Unit,
     onDelete: () -> Unit
@@ -262,10 +342,6 @@ fun ChecklistItemRow(
                 uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant
             )
         )
-        // Local state for list items too? Ideally yes, but list reordering makes it tricky.
-        // For checklist items, simple string update is usually fine as they are short.
-        // If cursor jump happens here, we need a separate component with local state.
-        // Let's implement a simple wrapper if needed. For now, strict BasicTextField.
         
         BasicTextField(
             value = item.text,
@@ -275,12 +351,105 @@ fun ChecklistItemRow(
                 color = if (item.isChecked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
             ),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            keyboardOptions = KeyboardOptions.Default,
             modifier = Modifier
                 .weight(1f)
                 .padding(start = 8.dp)
+                .focusRequester(focusRequester)
         )
         IconButton(onClick = onDelete) {
             Icon(Icons.Default.Close, "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+@Composable
+fun GroceryItemRow(
+    item: com.mininotes.app.data.ChecklistItem,
+    focusRequester: FocusRequester,
+    onCheckedChange: (Boolean) -> Unit,
+    onTextChange: (String) -> Unit,
+    onDetailsChange: (String?, String?, String?, String?) -> Unit,
+    onDelete: () -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        // Top Row: Checkbox + Name
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = item.isChecked,
+                onCheckedChange = onCheckedChange,
+                colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
+            )
+            BasicTextField(
+                value = item.text,
+                onValueChange = onTextChange,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    textDecoration = if (item.isChecked) androidx.compose.ui.text.style.TextDecoration.LineThrough else null,
+                    color = if (item.isChecked) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                keyboardOptions = KeyboardOptions.Default,
+                modifier = Modifier.weight(1f).padding(start = 8.dp).focusRequester(focusRequester)
+            )
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Close, "Delete", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        
+        // Details Row: Qty, Unit, Price
+        if (!item.isChecked) { // Hide details if checked/done to save space
+            Row(
+                Modifier.fillMaxWidth().padding(start = 50.dp, end = 16.dp, bottom = 4.dp), 
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                 // Qty
+                 SmallTextField(
+                     value = item.quantity ?: "",
+                     placeholder = "Qty",
+                     onValueChange = { onDetailsChange(it, item.unit, item.price, item.category) },
+                     modifier = Modifier.width(60.dp).padding(end = 8.dp)
+                 )
+                 // Unit (Simple Text for now, or dropdown)
+                 SmallTextField(
+                     value = item.unit ?: "",
+                     placeholder = "Unit",
+                     onValueChange = { onDetailsChange(item.quantity, it, item.price, item.category) },
+                     modifier = Modifier.width(60.dp).padding(end = 8.dp)
+                 )
+                 // Price
+                 SmallTextField(
+                     value = item.price ?: "",
+                     placeholder = "$",
+                     onValueChange = { onDetailsChange(item.quantity, item.unit, it, item.category) },
+                     modifier = Modifier.weight(1f)
+                 )
+            }
+        }
+    }
+}
+
+
+
+@Composable
+fun SmallTextField(
+    value: String,
+    placeholder: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface),
+        decorationBox = { innerTextField ->
+             if (value.isEmpty()) {
+                 Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
+             }
+             innerTextField()
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        modifier = modifier
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.small)
+            .padding(4.dp)
+    )
 }

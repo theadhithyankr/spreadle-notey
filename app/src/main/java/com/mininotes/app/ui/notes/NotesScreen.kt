@@ -34,6 +34,11 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Brush
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Archive
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
@@ -99,6 +104,7 @@ import com.mininotes.app.data.NoteEntity
 import com.mininotes.app.data.NoteType
 import com.mininotes.app.data.SortOrder
 import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.asImageBitmap
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -107,6 +113,7 @@ fun NotesScreen(
     viewModel: NotesViewModel,
     onNoteClick: (Long) -> Unit,
     onNewChecklist: () -> Unit,
+    onNewDrawing: () -> Unit,
     onOpenTrash: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
@@ -261,6 +268,20 @@ fun NotesScreen(
                             },
                             icon = { Icon(Icons.Default.CheckBox, "New List") },
                             text = { Text("List") },
+                            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                            expanded = true
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
+                        ExtendedFloatingActionButton(
+                            onClick = { 
+                                onNewDrawing()
+                                fabExpanded = false 
+                            },
+                            icon = { Icon(Icons.Default.Brush, "New Drawing") },
+                            text = { Text("Drawing") },
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                             expanded = true
@@ -526,6 +547,38 @@ fun NoteItem(
                 if (note.checklistItems.size > 5) {
                      Text("+ ${note.checklistItems.size - 5} checked items", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+
+            } else if (note.type == NoteType.DRAWING) {
+                // Drawing Thumbnail
+                 val context = LocalContext.current
+                 var bitmap by remember(note.content) { mutableStateOf<android.graphics.Bitmap?>(null) }
+                 
+                 androidx.compose.runtime.LaunchedEffect(note.content) {
+                     if (note.content.isNotEmpty()) {
+                         kotlinx.coroutines.Dispatchers.IO.let {
+                             val file = java.io.File(context.filesDir, note.content)
+                             if (file.exists()) {
+                                 bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+                             }
+                         }
+                     }
+                 }
+                 
+                 if (bitmap != null) {
+                     androidx.compose.foundation.Image(
+                         bitmap = bitmap!!.asImageBitmap(),
+                         contentDescription = "Drawing",
+                         modifier = Modifier
+                             .fillMaxWidth()
+                             .height(200.dp)
+                             .clip(RoundedCornerShape(8.dp)),
+                         contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                     )
+                 } else {
+                     Box(Modifier.fillMaxWidth().height(100.dp).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                         Icon(Icons.Default.Brush, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                     }
+                 }
             } else {
                  if (note.content.isNotEmpty()) {
                     Text(

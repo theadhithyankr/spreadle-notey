@@ -6,13 +6,19 @@ import kotlinx.serialization.Serializable
 
 enum class NoteType {
     TEXT,
-    CHECKLIST
+    CHECKLIST,
+    DRAWING,
+    GROCERY
 }
 
 @Serializable
 data class ChecklistItem(
     val text: String,
-    val isChecked: Boolean
+    val isChecked: Boolean,
+    val quantity: String? = null,
+    val unit: String? = null,
+    val price: String? = null,
+    val category: String? = null
 )
 
 @Serializable

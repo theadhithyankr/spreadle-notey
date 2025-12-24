@@ -40,6 +40,9 @@ fun NavGraph(
                 onNewChecklist = {
                     navController.navigate("editor/0?type=CHECKLIST")
                 },
+                onNewDrawing = {
+                    navController.navigate("editor/0?type=DRAWING")
+                },
                 onOpenTrash = {
                     navController.navigate("trash")
                 },

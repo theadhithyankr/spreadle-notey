@@ -117,9 +117,30 @@ class EditorViewModel(
         scheduleSave()
     }
 
-    fun addChecklistItem(text: String = "") {
+    fun updateGroceryItem(index: Int, quantity: String?, unit: String?, price: String?, category: String?) {
         _state.update { state ->
-            val newItems = state.checklistItems + ChecklistItem(text, false)
+            val newItems = state.checklistItems.toMutableList()
+            if (index in newItems.indices) {
+                newItems[index] = newItems[index].copy(
+                    quantity = quantity, 
+                    unit = unit, 
+                    price = price, 
+                    category = category
+                )
+            }
+            state.copy(checklistItems = newItems)
+        }
+        scheduleSave()
+    }
+
+    fun addChecklistItem(index: Int = -1, text: String = "") {
+        _state.update { state ->
+            val newItems = state.checklistItems.toMutableList()
+            if (index != -1 && index <= newItems.size) {
+                newItems.add(index, ChecklistItem(text, false))
+            } else {
+                newItems.add(ChecklistItem(text, false))
+            }
             state.copy(checklistItems = newItems)
         }
         scheduleSave()
@@ -139,10 +160,13 @@ class EditorViewModel(
     fun toggleNoteType() {
         _state.update { 
             val newType = if (it.type == NoteType.TEXT) NoteType.CHECKLIST else NoteType.TEXT
-            // Optional: Convert content to items or vice-versa? 
-            // For now, Keep specific: simple switch.
             it.copy(type = newType) 
         }
+        scheduleSave()
+    }
+
+    fun setNoteType(type: NoteType) {
+        _state.update { it.copy(type = type) }
         scheduleSave()
     }
 
