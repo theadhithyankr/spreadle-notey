@@ -1,43 +1,34 @@
-<div align="center">
-  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="App Icon" width="128" />
-</div>
+# Spreadle Notey
 
-# Spreadle Notey - Capture Your Thoughts
-A beautiful, modern, and privacy-focused note-taking application for Android.
+Offline-first Jetpack Compose notes app with Material 3 UI, dynamic theming, and private local storage.
 
-# Overview
-Spreadle Notey is built with Jetpack Compose and Material 3, offering a premium user experience with dynamic theming and smooth animations. It is designed to be simple yet powerful, keeping your thoughts organized and accessible.
-The app is completely offline-first, ensuring your data remains private and secure on your device.
+## Key Features
+- Offline-first Jetpack Compose notes app with Material 3 UI, dynamic theming, and private local storage
+- Android or JVM project structure is documented with the relevant Gradle, Kotlin, or Java entry points.
+- Existing media assets are referenced only where they are already present in the repository.
 
-# Features
-- **Rich Note Types**: Create standard text notes or interactive checklists.
-- **Material 3 Design**: Beautiful interface with multiple theme options (Dracula, Peach, Mauve, and more).
-- **Organization**: Powerful search, archive support, and trash management with recovery options.
-- **Multi-Selection**: Efficiently manage multiple notes with batch actions (Pin, Archive, Delete).
-- **Privacy-Focused**: Uses Room Database for secure local storage. No internet connection required.
+## Tech Stack
+- Gradle
+- Kotlin
+- Material 3
 
-# Development
-## Prerequisites
-- Android Studio (Latest Stable version recommended)
-- JDK 17 or higher
-- Android SDK API 26+
+## Project Structure
+- app/src/main - Android app source, manifest, and platform code.
 
-## Build & Run
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/theadhithyankr/notey.git
-   ```
-2. Open the project in Android Studio.
-3. Wait for Gradle Sync to complete.
-4. Run the application on an Emulator or connected Android device.
+## Setup and Run
+```bash
+git clone https://github.com/theadhithyankr/spreadle-notey.git
+cd spreadle-notey
+.\\gradlew.bat build
+```
 
-# Tech Stack
-- **Language**: Kotlin
-- **UI**: Jetpack Compose, Material 3
-- **Architecture**: MVVM (Model-View-ViewModel) with Clean Architecture principles
-- **Data Persistence**: Room Database
-- **Concurrency**: Coroutines & generic Flows
-- **Navigation**: Jetpack Compose Navigation
+## Screenshots and Media
+- Existing asset: app/src/main/res/mipmap-hdpi/ic_launcher.png
+- Existing asset: app/src/main/res/mipmap-hdpi/ic_launcher_round.png
 
-# License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## What This Project Demonstrates
+- Working with Android or JVM project structure, build tooling, and platform-specific source layout.
+- Presenting project scope, setup, and technical choices clearly for reviewers and recruiters.
+
+## Repository
+- GitHub: https://github.com/theadhithyankr/spreadle-notey
