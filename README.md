@@ -1,34 +1,58 @@
+<div align="center">
+
 # Spreadle Notey
 
-Offline-first Jetpack Compose notes app with Material 3 UI, dynamic theming, and private local storage.
+Note-taking application for capturing and organizing short notes.
+
+![Gradle](https://img.shields.io/badge/Gradle-02303A?logo=gradle) ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?logo=kotlin&logoColor=white)
+
+[Repository](https://github.com/theadhithyankr/spreadle-notey)
+
+</div>
+
+## Overview
+
+Spreadle Notey is a notes project in the TheAdhithyanKR/spreadle-notey repository. Offline-first Jetpack Compose notes app with Material 3 UI, dynamic theming, and private local storage.
+
+The README was written from the repository contents, including its manifest files, source tree, and available project metadata. The commands below are based on the build files present in the repository.
 
 ## Key Features
-- Offline-first Jetpack Compose notes app with Material 3 UI, dynamic theming, and private local storage
-- Android or JVM project structure is documented with the relevant Gradle, Kotlin, or Java entry points.
-- Existing media assets are referenced only where they are already present in the repository.
+
+- Create and manage note-style content
+- Mobile-friendly writing and browsing screens
+- Project structure for a compact productivity app
+- Practical example of CRUD-oriented app design
 
 ## Tech Stack
+
 - Gradle
 - Kotlin
-- Material 3
 
 ## Project Structure
-- app/src/main - Android app source, manifest, and platform code.
 
-## Setup and Run
-```bash
-git clone https://github.com/theadhithyankr/spreadle-notey.git
-cd spreadle-notey
-.\\gradlew.bat build
-```
+`	ext
+.
+|-- app/proguard-rules.pro
+|-- gradle.properties
+|-- gradlew
+|-- gradlew.bat
+|-- LICENSE
+|-- README.md
+`
 
-## Screenshots and Media
-- Existing asset: app/src/main/res/mipmap-hdpi/ic_launcher.png
-- Existing asset: app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+## Setup
+
+`ash
+.\gradlew assembleDebug
+`
 
 ## What This Project Demonstrates
-- Working with Android or JVM project structure, build tooling, and platform-specific source layout.
-- Presenting project scope, setup, and technical choices clearly for reviewers and recruiters.
 
-## Repository
-- GitHub: https://github.com/theadhithyankr/spreadle-notey
+- Ability to turn a focused product idea into a working codebase
+- Practical use of the repository's chosen framework and tooling
+- Attention to deployable structure, repeatable setup, and portfolio-ready presentation
+- Project-specific implementation around notes
+
+## Links
+
+- Repository: [https://github.com/theadhithyankr/spreadle-notey](https://github.com/theadhithyankr/spreadle-notey)
